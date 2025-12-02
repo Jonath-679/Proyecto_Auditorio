@@ -6,7 +6,7 @@ class DBManager:
     def __init__(self, path=None):
         if path is None:
             base_dir = Path.cwd() 
-            path = base_dir / "storage" / "data" / "data"
+            path = base_dir / "storage" / "data" / "database.db"
         self.path = Path(path) #ruta a la bd
         self.path.parent.mkdir(parents=True, exist_ok=True) #asegura que exista el directorio
         self.conn = sqlite3.connect(self.path) #conexion a la bd
@@ -127,24 +127,112 @@ class DBManager:
             ID del boleto creado, o None si el asiento ya está vendido para ese evento
         """
         cur = self.conn.cursor()
-        
         # Verificar si el asiento ya está vendido para este evento
         cur.execute("""
             SELECT 1 FROM boletos 
             WHERE id_evento = ? AND id_asiento = ?
         """, (id_evento, id_asiento))
-        
         if cur.fetchone() is not None:
             return None  # Asiento ya vendido
-        
         # Usar fecha actual si no se proporciona
         if fecha_compra is None:
             from datetime import datetime
             fecha_compra = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
         cur.execute("""
             INSERT INTO boletos (id_evento, id_asiento, id_cliente, fecha_compra, precio)
             VALUES (?, ?, ?, ?, ?)
         """, (id_evento, id_asiento, id_cliente, fecha_compra, precio))
+        self.conn.commit()
+        return cur.lastrowid
+
+    def create_seat(self, fila, numero, seccion):
+        """
+        Crea un nuevo asiento en la base de datos.
+        
+        Args:
+            fila: Fila del asiento (ej: "A", "B", "C")
+            numero: Número del asiento en la fila
+            seccion: Sección del auditorio (ej: "A1", "A2")
+            
+        Returns:
+            ID del asiento creado
+        """
+        cur = self.conn.cursor()
+        cur.execute("""
+            INSERT INTO asientos (fila, numero, seccion)
+            VALUES (?, ?, ?)
+        """, (fila, numero, seccion))
+        self.conn.commit()
+        return cur.lastrowid
+
+    def get_all_events(self):
+        """
+        Obtiene todos los eventos de la base de datos.
+        
+        Returns:
+            Lista de tuplas con todos los eventos
+        """
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT id_evento, tipo, costo_total, descripcion, fecha_inicio, fecha_fin
+            FROM eventos
+            ORDER BY fecha_inicio
+        """)
+        return cur.fetchall()
+
+    def get_seat_status(self, id_evento):
+        """
+        Obtiene el estado de todos los asientos para un evento específico.
+        
+        Args:
+            id_evento: ID del evento
+            
+        Returns:
+            Diccionario con id_asiento como clave y estado como valor (True=ocupado, False=disponible)
+        """
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT id_asiento FROM boletos WHERE id_evento = ?
+        """, (id_evento,))
+        ocupados = {row[0] for row in cur.fetchall()}
+        
+        cur.execute("SELECT id_asiento FROM asientos")
+        todos = cur.fetchall()
+        
+        return {id_asiento: id_asiento in ocupados for (id_asiento,) in todos}
+
+    def get_all_seats(self):
+        """
+        Obtiene todos los asientos de la base de datos.
+        
+        Returns:
+            Lista de tuplas con (id_asiento, fila, numero, seccion)
+        """
+        cur = self.conn.cursor()
+        cur.execute("""
+            SELECT id_asiento, fila, numero, seccion
+            FROM asientos
+            ORDER BY seccion, fila, numero
+        """)
+        return cur.fetchall()
+
+    def create_client(self, nombres, telefono, apellidos=None, correo=None):
+        """
+        Crea un nuevo cliente en la base de datos.
+        
+        Args:
+            nombres: Nombres del cliente (obligatorio)
+            telefono: Teléfono del cliente (obligatorio)
+            apellidos: Apellidos del cliente (opcional)
+            correo: Correo del cliente (opcional)
+            
+        Returns:
+            ID del cliente creado
+        """
+        cur = self.conn.cursor()
+        cur.execute("""
+            INSERT INTO clientes (nombres, apellidos, correo, telefono)
+            VALUES (?, ?, ?, ?)
+        """, (nombres, apellidos, correo, telefono))
         self.conn.commit()
         return cur.lastrowid

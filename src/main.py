@@ -1,20 +1,20 @@
 import flet as ft
 from app_controller import AppController
+from venta_view import VentaView
 
 
 def main(page: ft.Page):
     # Configuracion de la ventana
     page.title = "PROYECTO AUDITORIO [BD]"
-    page.bgcolor = ft.Colors.BLUE_GREY_700
+    page.bgcolor = ft.Colors.BLUE_GREY_900
     page.theme_mode = ft.ThemeMode.DARK
-    page.window.width = 1280
-    page.window.height = 720
-    page.window.center()
+    page.window.maximized = True
     page.vertical_alignment = ft.MainAxisAlignment.CENTER
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
 
     # Variables y objetos
     controller = AppController()
+    venta_view = VentaView(controller, page)
     locked_admin = True
     prev_index = 0
 
@@ -62,10 +62,7 @@ def main(page: ft.Page):
             page.update()
 
     # Contenidos de las pestañas
-    venta_content = ft.Column([
-        ft.Text("Pestaña VENTA", size=24),
-        ft.Text("Aquí iría la interfaz de ventas..."),
-    ], alignment=ft.MainAxisAlignment.START)
+    venta_content = venta_view.get_content()
 
     admin_content = ft.Column([
         ft.Text("ADMINISTRACION", size=24),
@@ -133,14 +130,19 @@ def main(page: ft.Page):
         animation_duration=200,
         on_change=on_tabs_change,
         tabs=[
-            ft.Tab(text="VENTA", content=ft.Container(content=venta_content, padding=20)),
+            ft.Tab(
+                text="VENTA",
+                icon=ft.Icons.POINT_OF_SALE,
+                content=ft.Container(content=venta_content, padding=20),
+            ),
             ft.Tab(
                 text="ADMINISTRACION 🔒",
                 icon=ft.Icons.LOCK,
                 content=admin_tab_container,
             ),
         ],
-        expand=1
+        expand=True,
+        label_padding=ft.padding.symmetric(horizontal=30),
     )
 
     page.overlay.append(dialog)
