@@ -69,7 +69,6 @@ pip install -r requirements.txt
 
 3. **Ejecutar la aplicación**
 ```bash
-cd src
 flet run main.py
 ```
 
