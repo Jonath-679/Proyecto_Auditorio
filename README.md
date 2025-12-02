@@ -36,6 +36,7 @@ PROYECTO_AUDITORIO/
 │       └── database.db      # Base de datos SQLite
 ├── requirements.txt
 └── README.md
+└── pyproject.toml
 ```
 
 ## 🗄️ Modelo de Base de Datos
