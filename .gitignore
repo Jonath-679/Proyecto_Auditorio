@@ -164,3 +164,6 @@ storage/
 
 # DIAGRAMA_BD
 DIAGRAMA_BD/
+
+# extra
+.vs/
